@@ -79,7 +79,8 @@ function checkAnswer(button) {
         resultElement.style.color = 'green';
         score += 2;
         playAudio('correct-audio');
-        speakWord(currentWord.correct, 3); // Speak the word 3 times
+        // Use async function to await speech completion
+        readCorrectWord(currentWord.correct, 3);
     } else {
         resultElement.textContent = '틀렸습니다. 다시 시도하세요.';
         resultElement.style.color = 'red';
@@ -99,38 +100,34 @@ function updateScore() {
     scoreFill.style.width = `${score}%`;
 }
 
-function speakWord(word, times) {
-    let count = 0;
-
-    function speak() {
-        if (count < times) {
-            const utterance = new SpeechSynthesisUtterance(word);
-            const selectedVoice = document.getElementById('voice-select').selectedOptions[0]?.getAttribute('data-name');
-            // Choose the selected voice or default to the first voice
-            utterance.voice = voices.find(voice => voice.name === selectedVoice) || voices[0];
-            utterance.rate = parseFloat(document.getElementById('rate').value);
-
-            utterance.onerror = function (event) {
-                console.error('SpeechSynthesisUtterance.onerror', event);
-            };
-
-            utterance.onend = function () {
-                count++;
-                if (count < times) {
-                    speak(); // Repeat until count is reached
-                } else {
-                    // Move to the next question after speaking the word 3 times
-                    setTimeout(() => {
-                        questionNumber++;
-                        nextWord();
-                    }, 1000); // Small delay to transition smoothly
-                }
-            };
-
-            synth.speak(utterance);
-        }
+// New async function to read the correct word multiple times
+async function readCorrectWord(word, times) {
+    for (let i = 0; i < times; i++) {
+        await speakWord(word);
     }
-    speak();
+    questionNumber++;
+    nextWord();
+}
+
+function speakWord(word) {
+    return new Promise((resolve, reject) => {
+        const utterance = new SpeechSynthesisUtterance(word);
+        const selectedVoice = document.getElementById('voice-select').selectedOptions[0]?.getAttribute('data-name');
+        // Choose the selected voice or default to the first voice
+        utterance.voice = voices.find(voice => voice.name === selectedVoice) || voices[0];
+        utterance.rate = parseFloat(document.getElementById('rate').value);
+
+        utterance.onerror = function (event) {
+            console.error('SpeechSynthesisUtterance.onerror', event);
+            reject(event);
+        };
+
+        utterance.onend = function () {
+            resolve();
+        };
+
+        synth.speak(utterance);
+    });
 }
 
 function initializeSpeechRecognition() {
