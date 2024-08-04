@@ -9,11 +9,11 @@ let recognition;
 document.addEventListener('DOMContentLoaded', function() {
     loadVocabulary();
     initializeSpeechRecognition();
-    populateVoiceList();
-
-    // Populate voice list when voices change
+    // Ensure voices are loaded before trying to use them
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = populateVoiceList;
+    } else {
+        populateVoiceList();
     }
 });
 
@@ -26,14 +26,24 @@ function loadVocabulary() {
                 return { korean, correct, wrong, wrongKorean };
             });
             nextWord();
+        })
+        .catch(error => {
+            console.error('Error loading vocabulary:', error);
+            alert('Failed to load vocabulary. Please try again later.');
         });
 }
 
 function nextWord() {
+    if (words.length === 0) {
+        console.error('No words loaded');
+        return;
+    }
+
     if (score >= 100) {
         endGame();
         return;
     }
+
     currentWord = words[Math.floor(Math.random() * words.length)];
     const wordCard = document.getElementById('word-card');
     const choices = [currentWord.correct, currentWord.wrong];
@@ -81,11 +91,11 @@ function checkAnswer(button) {
         resultElement.style.color = 'red';
         score = Math.max(0, score - 2);
         playAudio('incorrect-audio');
-        // 틀린 경우 버튼을 다시 활성화
-        buttons.forEach(btn => btn.disabled = false);
-        return; // 틀린 경우 함수를 여기서 종료
+        return;
     }
     updateScore();
+    // Disable choices after answer
+    buttons.forEach(btn => btn.disabled = true);
 }
 
 function updateScore() {
@@ -180,8 +190,8 @@ function populateVoiceList() {
     const voiceSelect = document.getElementById('voice-select');
     voiceSelect.innerHTML = ''; // Clear previous options
 
+    // Add US English voices
     voices.forEach((voice) => {
-        // Only add voices that are American English
         if (voice.lang === 'en-US') {
             const option = document.createElement('option');
             option.textContent = `${voice.name} (${voice.lang})`;
@@ -192,7 +202,7 @@ function populateVoiceList() {
     });
 
     // Set default voice if not selected
-    if (!voiceSelect.value && voiceSelect.options.length > 0) {
+    if (voiceSelect.options.length > 0) {
         voiceSelect.selectedIndex = 0;
     }
 }
