@@ -82,7 +82,12 @@ function checkAnswer(button) {
         resultElement.style.color = 'green';
         score += 2;
         playAudio('correct-audio');
-        speakWordNTimes(currentWord.correct, 3); // Call the new function with precise control
+
+        // Stop recognition while speaking to avoid picking up own voice
+        recognition.stop();
+
+        // Call the function with controlled speaking
+        speakWordNTimes(currentWord.correct, 3); // Read the correct answer 3 times
     } else {
         resultElement.textContent = '틀렸습니다. 다시 시도하세요.';
         resultElement.style.color = 'red';
@@ -129,6 +134,7 @@ function speakWordNTimes(word, times) {
                         speaking = false; // Reset the speaking flag
                         questionNumber++;
                         nextWord();
+                        startSpeechRecognition(); // Restart recognition after speech
                     }, 1000); // Small delay to transition smoothly
                 }
             };
@@ -162,7 +168,8 @@ function initializeSpeechRecognition() {
 
             voiceInputBox.innerHTML = finalTranscript + '<i style="color:#999">' + interimTranscript + '</i>';
 
-            if (finalTranscript.toLowerCase().includes(currentWord.correct.toLowerCase())) {
+            if (!speaking && finalTranscript.toLowerCase().includes(currentWord.correct.toLowerCase())) {
+                // Ensure speaking flag prevents interruption
                 checkAnswer({ textContent: currentWord.correct });
                 recognition.stop();
             }
@@ -173,8 +180,8 @@ function initializeSpeechRecognition() {
         };
 
         recognition.onend = function () {
-            console.log('Speech recognition ended. Restarting...');
-            startSpeechRecognition();
+            console.log('Speech recognition ended. Waiting for user input...');
+            // Don't restart automatically; let the user decide when to listen again
         };
     } else {
         console.error('Speech recognition is not supported in this browser.');
@@ -182,7 +189,7 @@ function initializeSpeechRecognition() {
 }
 
 function startSpeechRecognition() {
-    if (recognition) {
+    if (recognition && !speaking) {
         recognition.start();
         console.log('Speech recognition started');
     } else {
@@ -228,7 +235,7 @@ function playAudio(id) {
 }
 
 document.getElementById('voice-input-btn').addEventListener('click', () => {
-    if (!synth.speaking) {
+    if (!synth.speaking && !speaking) {
         startSpeechRecognition();
     }
 });
