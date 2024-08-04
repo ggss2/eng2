@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSpeechRecognition();
     populateVoiceList();
 
-    // Listen for voice changes and populate if necessary
+    // Populate voice list when voices change
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = populateVoiceList;
     }
@@ -198,4 +198,23 @@ function populateVoiceList() {
 }
 
 function endGame() {
-    const wordCard = document.getElementById('word
+    const wordCard = document.getElementById('word-card');
+    wordCard.innerHTML = '<h2>축하합니다! 학습을 완료했습니다.</h2>';
+    document.getElementById('voice-input-box').style.display = 'none';
+    document.getElementById('voice-input-btn').style.display = 'none';
+}
+
+function playAudio(id) {
+    const audio = document.getElementById(id);
+    audio.play();
+}
+
+document.getElementById('voice-input-btn').addEventListener('click', () => {
+    if (!synth.speaking) {
+        startSpeechRecognition();
+    }
+});
+
+document.getElementById('rate').addEventListener('input', function() {
+    document.getElementById('rate-value').textContent = this.value;
+});
