@@ -79,7 +79,7 @@ function checkAnswer(button) {
         resultElement.style.color = 'green';
         score += 2;
         playAudio('correct-audio');
-        speakWord(currentWord.correct, 3); // Speak the word 3 times before moving on
+        speakWord(currentWord.correct, 3); // Speak the word 3 times
     } else {
         resultElement.textContent = '틀렸습니다. 다시 시도하세요.';
         resultElement.style.color = 'red';
@@ -123,7 +123,7 @@ function speakWord(word, times) {
                     setTimeout(() => {
                         questionNumber++;
                         nextWord();
-                    }, 1000);
+                    }, 1000); // Small delay to transition smoothly
                 }
             };
 
