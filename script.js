@@ -11,9 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSpeechRecognition();
     populateVoiceList();
 
-    // Populate voice list when voices change
+    // Listen for voice changes and populate if necessary
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = populateVoiceList;
+    } else {
+        setTimeout(populateVoiceList, 1000); // Retry after a short delay
     }
 });
 
@@ -204,6 +206,11 @@ function populateVoiceList() {
             voiceSelect.appendChild(option);
         }
     });
+
+    if (voiceSelect.options.length === 0) {
+        console.warn('No US English voices found. Retrying...');
+        setTimeout(populateVoiceList, 1000); // Retry voice population if none found
+    }
 
     // Set default voice if not selected
     if (voiceSelect.options.length > 0) {
