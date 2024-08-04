@@ -181,13 +181,12 @@ function populateVoiceList() {
     voiceSelect.innerHTML = ''; // Clear previous options
 
     voices.forEach((voice) => {
-        if (voice.lang.startsWith('en')) {
-            const option = document.createElement('option');
-            option.textContent = `${voice.name} (${voice.lang})`;
-            option.setAttribute('data-lang', voice.lang);
-            option.setAttribute('data-name', voice.name);
-            voiceSelect.appendChild(option);
-        }
+        // Add all available voices, regardless of language
+        const option = document.createElement('option');
+        option.textContent = `${voice.name} (${voice.lang})`;
+        option.setAttribute('data-lang', voice.lang);
+        option.setAttribute('data-name', voice.name);
+        voiceSelect.appendChild(option);
     });
 
     // Set default voice if not selected
