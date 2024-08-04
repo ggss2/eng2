@@ -5,6 +5,7 @@ let questionNumber = 1;
 let synth = window.speechSynthesis;
 let voices = [];
 let recognition;
+let speaking = false; // Flag to track if speaking is in progress
 
 document.addEventListener('DOMContentLoaded', function () {
     loadVocabulary();
@@ -62,6 +63,8 @@ function shuffleArray(array) {
 }
 
 function checkAnswer(button) {
+    if (speaking) return; // Prevent interaction if speaking is ongoing
+
     const isCorrect = button.textContent.toLowerCase() === currentWord.correct.toLowerCase();
     const resultElement = document.getElementById('result');
     const buttons = document.querySelectorAll('.choice');
@@ -79,8 +82,7 @@ function checkAnswer(button) {
         resultElement.style.color = 'green';
         score += 2;
         playAudio('correct-audio');
-        // Call the new function with precise control
-        speakWordNTimes(currentWord.correct, 3);
+        speakWordNTimes(currentWord.correct, 3); // Call the new function with precise control
     } else {
         resultElement.textContent = '틀렸습니다. 다시 시도하세요.';
         resultElement.style.color = 'red';
@@ -102,6 +104,7 @@ function updateScore() {
 
 function speakWordNTimes(word, times) {
     let count = 0;
+    speaking = true; // Set the flag to indicate speaking is in progress
 
     function speak() {
         if (count < times) {
@@ -113,6 +116,7 @@ function speakWordNTimes(word, times) {
 
             utterance.onerror = function (event) {
                 console.error('SpeechSynthesisUtterance.onerror', event);
+                speaking = false; // Reset flag on error
             };
 
             utterance.onend = function () {
@@ -122,6 +126,7 @@ function speakWordNTimes(word, times) {
                 } else {
                     // Ensure we move to the next question after all repetitions are done
                     setTimeout(() => {
+                        speaking = false; // Reset the speaking flag
                         questionNumber++;
                         nextWord();
                     }, 1000); // Small delay to transition smoothly
