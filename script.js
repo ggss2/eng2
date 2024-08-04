@@ -6,12 +6,12 @@ let synth = window.speechSynthesis;
 let voices = [];
 let recognition;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadVocabulary();
     initializeSpeechRecognition();
-    populateVoiceList();
 
-    // Listen for voice changes and populate if necessary
+    // Ensure voices are loaded and populate the list
+    populateVoiceList();
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = populateVoiceList;
     }
@@ -26,6 +26,10 @@ function loadVocabulary() {
                 return { korean, correct, wrong, wrongKorean };
             });
             nextWord();
+        })
+        .catch(error => {
+            console.error('Error loading vocabulary:', error);
+            alert('Failed to load vocabulary. Please try again later.');
         });
 }
 
@@ -81,11 +85,17 @@ function checkAnswer(button) {
         resultElement.style.color = 'red';
         score = Math.max(0, score - 2);
         playAudio('incorrect-audio');
-        // 틀린 경우 버튼을 다시 활성화
-        buttons.forEach(btn => btn.disabled = false);
-        return; // 틀린 경우 함수를 여기서 종료
+        return;
     }
     updateScore();
+    // Disable choices after answer
+    buttons.forEach(btn => btn.disabled = true);
+
+    // Proceed to the next word after a delay
+    setTimeout(() => {
+        questionNumber++;
+        nextWord();
+    }, 2000);
 }
 
 function updateScore() {
@@ -101,14 +111,15 @@ function speakWord(word, times) {
         if (count < times) {
             const utterance = new SpeechSynthesisUtterance(word);
             const selectedVoice = document.getElementById('voice-select').selectedOptions[0]?.getAttribute('data-name');
+            // Choose the selected voice or default to the first voice
             utterance.voice = voices.find(voice => voice.name === selectedVoice) || voices[0];
             utterance.rate = parseFloat(document.getElementById('rate').value);
 
-            utterance.onerror = function(event) {
+            utterance.onerror = function (event) {
                 console.error('SpeechSynthesisUtterance.onerror', event);
             };
 
-            utterance.onend = function() {
+            utterance.onend = function () {
                 count++;
                 speak(); // Repeat until count is reached
             };
@@ -132,7 +143,7 @@ function initializeSpeechRecognition() {
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        recognition.onresult = function(event) {
+        recognition.onresult = function (event) {
             const voiceInputBox = document.getElementById('voice-input-box');
             let interimTranscript = '';
             let finalTranscript = '';
@@ -153,11 +164,11 @@ function initializeSpeechRecognition() {
             }
         };
 
-        recognition.onerror = function(event) {
+        recognition.onerror = function (event) {
             console.error('Speech recognition error', event.error);
         };
 
-        recognition.onend = function() {
+        recognition.onend = function () {
             console.log('Speech recognition ended. Restarting...');
             startSpeechRecognition();
         };
@@ -180,8 +191,9 @@ function populateVoiceList() {
     const voiceSelect = document.getElementById('voice-select');
     voiceSelect.innerHTML = ''; // Clear previous options
 
+    // Add US English voices
     voices.forEach((voice) => {
-        if (voice.lang.startsWith('en')) {
+        if (voice.lang === 'en-US') {
             const option = document.createElement('option');
             option.textContent = `${voice.name} (${voice.lang})`;
             option.setAttribute('data-lang', voice.lang);
@@ -189,6 +201,9 @@ function populateVoiceList() {
             voiceSelect.appendChild(option);
         }
     });
+
+    // Log available voices for debugging
+    console.log('Available voices:', voices);
 
     // Set default voice if not selected
     if (!voiceSelect.value && voices.length > 0) {
@@ -214,6 +229,6 @@ document.getElementById('voice-input-btn').addEventListener('click', () => {
     }
 });
 
-document.getElementById('rate').addEventListener('input', function() {
+document.getElementById('rate').addEventListener('input', function () {
     document.getElementById('rate-value').textContent = this.value;
 });
