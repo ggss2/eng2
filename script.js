@@ -192,29 +192,10 @@ function populateVoiceList() {
     });
 
     // Set default voice if not selected
-    if (!voiceSelect.value && voices.length > 0) {
+    if (!voiceSelect.value && voiceSelect.options.length > 0) {
         voiceSelect.selectedIndex = 0;
     }
 }
 
 function endGame() {
-    const wordCard = document.getElementById('word-card');
-    wordCard.innerHTML = '<h2>축하합니다! 학습을 완료했습니다.</h2>';
-    document.getElementById('voice-input-box').style.display = 'none';
-    document.getElementById('voice-input-btn').style.display = 'none';
-}
-
-function playAudio(id) {
-    const audio = document.getElementById(id);
-    audio.play();
-}
-
-document.getElementById('voice-input-btn').addEventListener('click', () => {
-    if (!synth.speaking) {
-        startSpeechRecognition();
-    }
-});
-
-document.getElementById('rate').addEventListener('input', function() {
-    document.getElementById('rate-value').textContent = this.value;
-});
+    const wordCard = document.getElementById('word
