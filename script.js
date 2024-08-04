@@ -9,9 +9,9 @@ let recognition;
 document.addEventListener('DOMContentLoaded', function() {
     loadVocabulary();
     initializeSpeechRecognition();
-
-    // Ensure voices are loaded and populate the list
     populateVoiceList();
+
+    // Listen for voice changes and populate if necessary
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = populateVoiceList;
     }
@@ -26,10 +26,6 @@ function loadVocabulary() {
                 return { korean, correct, wrong, wrongKorean };
             });
             nextWord();
-        })
-        .catch(error => {
-            console.error('Error loading vocabulary:', error);
-            alert('Failed to load vocabulary. Please try again later.');
         });
 }
 
@@ -38,20 +34,19 @@ function nextWord() {
         endGame();
         return;
     }
-
     currentWord = words[Math.floor(Math.random() * words.length)];
     const wordCard = document.getElementById('word-card');
     const choices = [currentWord.correct, currentWord.wrong];
     shuffleArray(choices);
 
-    wordCard.innerHTML = `
+    wordCard.innerHTML = 
         <p class="korean-word">${currentWord.korean}</p>
         <button class="choice" onclick="checkAnswer(this)">${choices[0]}</button>
         <button class="choice" onclick="checkAnswer(this)">${choices[1]}</button>
-    `;
+    ;
     document.getElementById('result').textContent = '';
     document.getElementById('voice-input-box').innerHTML = '<p>정답을 말해보세요</p>';
-    document.getElementById('question-number').textContent = `Question ${questionNumber}`;
+    document.getElementById('question-number').textContent = Question ${questionNumber};
     startSpeechRecognition();
 }
 
@@ -86,24 +81,18 @@ function checkAnswer(button) {
         resultElement.style.color = 'red';
         score = Math.max(0, score - 2);
         playAudio('incorrect-audio');
-        return;
+        // 틀린 경우 버튼을 다시 활성화
+        buttons.forEach(btn => btn.disabled = false);
+        return; // 틀린 경우 함수를 여기서 종료
     }
     updateScore();
-    // Disable choices after answer
-    buttons.forEach(btn => btn.disabled = true);
-
-    // Proceed to the next word after a delay
-    setTimeout(() => {
-        questionNumber++;
-        nextWord();
-    }, 2000);
 }
 
 function updateScore() {
     const scoreDisplay = document.getElementById('score-display');
     const scoreFill = document.getElementById('score-fill');
-    scoreDisplay.textContent = `Score: ${score}`;
-    scoreFill.style.width = `${score}%`;
+    scoreDisplay.textContent = Score: ${score};
+    scoreFill.style.width = ${score}%;
 }
 
 function speakWord(word, times) {
@@ -125,6 +114,11 @@ function speakWord(word, times) {
             };
 
             synth.speak(utterance);
+        } else {
+            setTimeout(() => {
+                questionNumber++;
+                nextWord();
+            }, 1000);
         }
     }
     speak();
@@ -135,7 +129,7 @@ function initializeSpeechRecognition() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
-        recognition.continuous = false;  // Stop after each result
+        recognition.continuous = true;
         recognition.interimResults = true;
 
         recognition.onresult = function(event) {
@@ -164,7 +158,8 @@ function initializeSpeechRecognition() {
         };
 
         recognition.onend = function() {
-            console.log('Speech recognition ended.');
+            console.log('Speech recognition ended. Restarting...');
+            startSpeechRecognition();
         };
     } else {
         console.error('Speech recognition is not supported in this browser.');
@@ -185,44 +180,20 @@ function populateVoiceList() {
     const voiceSelect = document.getElementById('voice-select');
     voiceSelect.innerHTML = ''; // Clear previous options
 
-    // Add US English voices and categorize them as Male or Female
-    let maleVoices = [];
-    let femaleVoices = [];
-    
     voices.forEach((voice) => {
+        // Only add voices that are American English
         if (voice.lang === 'en-US') {
             const option = document.createElement('option');
-            option.textContent = `${voice.name} (${voice.lang})`;
+            option.textContent = ${voice.name} (${voice.lang});
             option.setAttribute('data-lang', voice.lang);
             option.setAttribute('data-name', voice.name);
-            if (voice.name.toLowerCase().includes("female") || voice.name.toLowerCase().includes("woman")) {
-                femaleVoices.push(option);
-            } else {
-                maleVoices.push(option);
-            }
+            voiceSelect.appendChild(option);
         }
     });
 
-    // Add voices to select box categorized by Male and Female
-    if (femaleVoices.length > 0) {
-        const femaleGroup = document.createElement('optgroup');
-        femaleGroup.label = 'Female Voices';
-        femaleVoices.forEach(option => femaleGroup.appendChild(option));
-        voiceSelect.appendChild(femaleGroup);
-    }
-
-    if (maleVoices.length > 0) {
-        const maleGroup = document.createElement('optgroup');
-        maleGroup.label = 'Male Voices';
-        maleVoices.forEach(option => maleGroup.appendChild(option));
-        voiceSelect.appendChild(maleGroup);
-    }
-
     // Set default voice if not selected
-    if (voiceSelect.options.length > 0) {
+    if (!voiceSelect.value && voices.length > 0) {
         voiceSelect.selectedIndex = 0;
-    } else {
-        console.error('No US English voices available.');
     }
 }
 
