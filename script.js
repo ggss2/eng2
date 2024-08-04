@@ -79,8 +79,7 @@ function checkAnswer(button) {
         resultElement.style.color = 'green';
         score += 2;
         playAudio('correct-audio');
-        // Use async function to await speech completion
-        readCorrectWord(currentWord.correct, 3);
+        repeatWord(currentWord.correct, 3); // Call the new recursive function
     } else {
         resultElement.textContent = '틀렸습니다. 다시 시도하세요.';
         resultElement.style.color = 'red';
@@ -100,34 +99,30 @@ function updateScore() {
     scoreFill.style.width = `${score}%`;
 }
 
-// New async function to read the correct word multiple times
-async function readCorrectWord(word, times) {
-    for (let i = 0; i < times; i++) {
-        await speakWord(word);
-    }
-    questionNumber++;
-    nextWord();
-}
-
-function speakWord(word) {
-    return new Promise((resolve, reject) => {
+// Recursive function to repeat the word and then proceed
+function repeatWord(word, remainingRepetitions) {
+    if (remainingRepetitions > 0) {
         const utterance = new SpeechSynthesisUtterance(word);
         const selectedVoice = document.getElementById('voice-select').selectedOptions[0]?.getAttribute('data-name');
-        // Choose the selected voice or default to the first voice
         utterance.voice = voices.find(voice => voice.name === selectedVoice) || voices[0];
         utterance.rate = parseFloat(document.getElementById('rate').value);
 
-        utterance.onerror = function (event) {
-            console.error('SpeechSynthesisUtterance.onerror', event);
-            reject(event);
+        utterance.onend = function () {
+            repeatWord(word, remainingRepetitions - 1); // Recursively call the function
         };
 
-        utterance.onend = function () {
-            resolve();
+        utterance.onerror = function (event) {
+            console.error('SpeechSynthesisUtterance.onerror', event);
         };
 
         synth.speak(utterance);
-    });
+    } else {
+        // Move to the next question after all repetitions are done
+        setTimeout(() => {
+            questionNumber++;
+            nextWord();
+        }, 1000); // Small delay to transition smoothly
+    }
 }
 
 function initializeSpeechRecognition() {
