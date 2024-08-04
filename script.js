@@ -9,13 +9,13 @@ let recognition;
 document.addEventListener('DOMContentLoaded', function() {
     loadVocabulary();
     initializeSpeechRecognition();
-    populateVoiceList();
 
-    // Listen for voice changes and populate if necessary
+    // Populate voice list initially and listen for changes
+    populateVoiceList();
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = populateVoiceList;
     } else {
-        setTimeout(populateVoiceList, 1000); // Retry after a short delay
+        console.warn('Voice change event not supported.');
     }
 });
 
@@ -196,6 +196,12 @@ function populateVoiceList() {
     const voiceSelect = document.getElementById('voice-select');
     voiceSelect.innerHTML = ''; // Clear previous options
 
+    if (voices.length === 0) {
+        console.warn('No voices found. Retrying...');
+        setTimeout(populateVoiceList, 1000); // Retry voice population if none found
+        return;
+    }
+
     // Add US English voices
     voices.forEach((voice) => {
         if (voice.lang === 'en-US') {
@@ -207,14 +213,11 @@ function populateVoiceList() {
         }
     });
 
-    if (voiceSelect.options.length === 0) {
-        console.warn('No US English voices found. Retrying...');
-        setTimeout(populateVoiceList, 1000); // Retry voice population if none found
-    }
-
     // Set default voice if not selected
     if (voiceSelect.options.length > 0) {
         voiceSelect.selectedIndex = 0;
+    } else {
+        console.error('No US English voices available.');
     }
 }
 
@@ -231,11 +234,4 @@ function playAudio(id) {
 }
 
 document.getElementById('voice-input-btn').addEventListener('click', () => {
-    if (!synth.speaking) {
-        startSpeechRecognition();
-    }
-});
-
-document.getElementById('rate').addEventListener('input', function() {
-    document.getElementById('rate-value').textContent = this.value;
-});
+    if (!synth.speaking)
