@@ -9,11 +9,11 @@ let recognition;
 document.addEventListener('DOMContentLoaded', function() {
     loadVocabulary();
     initializeSpeechRecognition();
-    // Ensure voices are loaded before trying to use them
+    populateVoiceList();
+
+    // Populate voice list when voices change
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = populateVoiceList;
-    } else {
-        populateVoiceList();
     }
 });
 
@@ -24,7 +24,12 @@ function loadVocabulary() {
             words = data.split('\n').slice(1).map(line => {
                 const [korean, correct, wrong, wrongKorean] = line.split(',');
                 return { korean, correct, wrong, wrongKorean };
-            });
+            }).filter(word => word.correct); // Ensure valid entries
+            if (words.length === 0) {
+                console.error('No vocabulary words found.');
+                alert('No vocabulary data found. Please check the CSV file.');
+                return;
+            }
             nextWord();
         })
         .catch(error => {
@@ -57,7 +62,6 @@ function nextWord() {
     document.getElementById('result').textContent = '';
     document.getElementById('voice-input-box').innerHTML = '<p>정답을 말해보세요</p>';
     document.getElementById('question-number').textContent = `Question ${questionNumber}`;
-    startSpeechRecognition();
 }
 
 function shuffleArray(array) {
@@ -96,6 +100,12 @@ function checkAnswer(button) {
     updateScore();
     // Disable choices after answer
     buttons.forEach(btn => btn.disabled = true);
+
+    // Proceed to the next word after a delay
+    setTimeout(() => {
+        questionNumber++;
+        nextWord();
+    }, 2000);
 }
 
 function updateScore() {
@@ -124,11 +134,6 @@ function speakWord(word, times) {
             };
 
             synth.speak(utterance);
-        } else {
-            setTimeout(() => {
-                questionNumber++;
-                nextWord();
-            }, 1000);
         }
     }
     speak();
@@ -139,7 +144,7 @@ function initializeSpeechRecognition() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
-        recognition.continuous = true;
+        recognition.continuous = false;  // Stop after each result
         recognition.interimResults = true;
 
         recognition.onresult = function(event) {
@@ -168,8 +173,7 @@ function initializeSpeechRecognition() {
         };
 
         recognition.onend = function() {
-            console.log('Speech recognition ended. Restarting...');
-            startSpeechRecognition();
+            console.log('Speech recognition ended.');
         };
     } else {
         console.error('Speech recognition is not supported in this browser.');
