@@ -79,7 +79,8 @@ function checkAnswer(button) {
         resultElement.style.color = 'green';
         score += 2;
         playAudio('correct-audio');
-        repeatWord(currentWord.correct, 3); // Call the new recursive function
+        // Call the new function with precise control
+        speakWordNTimes(currentWord.correct, 3);
     } else {
         resultElement.textContent = '틀렸습니다. 다시 시도하세요.';
         resultElement.style.color = 'red';
@@ -99,30 +100,38 @@ function updateScore() {
     scoreFill.style.width = `${score}%`;
 }
 
-// Recursive function to repeat the word and then proceed
-function repeatWord(word, remainingRepetitions) {
-    if (remainingRepetitions > 0) {
-        const utterance = new SpeechSynthesisUtterance(word);
-        const selectedVoice = document.getElementById('voice-select').selectedOptions[0]?.getAttribute('data-name');
-        utterance.voice = voices.find(voice => voice.name === selectedVoice) || voices[0];
-        utterance.rate = parseFloat(document.getElementById('rate').value);
+function speakWordNTimes(word, times) {
+    let count = 0;
 
-        utterance.onend = function () {
-            repeatWord(word, remainingRepetitions - 1); // Recursively call the function
-        };
+    function speak() {
+        if (count < times) {
+            const utterance = new SpeechSynthesisUtterance(word);
+            const selectedVoice = document.getElementById('voice-select').selectedOptions[0]?.getAttribute('data-name');
+            // Choose the selected voice or default to the first voice
+            utterance.voice = voices.find(voice => voice.name === selectedVoice) || voices[0];
+            utterance.rate = parseFloat(document.getElementById('rate').value);
 
-        utterance.onerror = function (event) {
-            console.error('SpeechSynthesisUtterance.onerror', event);
-        };
+            utterance.onerror = function (event) {
+                console.error('SpeechSynthesisUtterance.onerror', event);
+            };
 
-        synth.speak(utterance);
-    } else {
-        // Move to the next question after all repetitions are done
-        setTimeout(() => {
-            questionNumber++;
-            nextWord();
-        }, 1000); // Small delay to transition smoothly
+            utterance.onend = function () {
+                count++;
+                if (count < times) {
+                    speak(); // Continue speaking until the count is reached
+                } else {
+                    // Ensure we move to the next question after all repetitions are done
+                    setTimeout(() => {
+                        questionNumber++;
+                        nextWord();
+                    }, 1000); // Small delay to transition smoothly
+                }
+            };
+
+            synth.speak(utterance);
+        }
     }
+    speak();
 }
 
 function initializeSpeechRecognition() {
