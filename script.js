@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', function() {
     loadVocabulary();
     initializeSpeechRecognition();
     populateVoiceList();
+
+    // Listen for voice changes and populate if necessary
+    if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = populateVoiceList;
+    }
 });
 
 function loadVocabulary() {
@@ -95,11 +100,20 @@ function speakWord(word, times) {
     function speak() {
         if (count < times) {
             const utterance = new SpeechSynthesisUtterance(word);
-            utterance.voice = synth.getVoices().find(voice => voice.lang === 'en-US');
+            const selectedVoice = document.getElementById('voice-select').selectedOptions[0]?.getAttribute('data-name');
+            utterance.voice = voices.find(voice => voice.name === selectedVoice) || voices[0];
             utterance.rate = parseFloat(document.getElementById('rate').value);
+
+            utterance.onerror = function(event) {
+                console.error('SpeechSynthesisUtterance.onerror', event);
+            };
+
+            utterance.onend = function() {
+                count++;
+                speak(); // Repeat until count is reached
+            };
+
             synth.speak(utterance);
-            count++;
-            utterance.onend = speak;
         } else {
             setTimeout(() => {
                 questionNumber++;
@@ -133,7 +147,7 @@ function initializeSpeechRecognition() {
 
             voiceInputBox.innerHTML = finalTranscript + '<i style="color:#999">' + interimTranscript + '</i>';
 
-            if (finalTranscript.toLowerCase() === currentWord.correct.toLowerCase()) {
+            if (finalTranscript.toLowerCase().includes(currentWord.correct.toLowerCase())) {
                 checkAnswer({ textContent: currentWord.correct });
                 recognition.stop();
             }
@@ -147,6 +161,8 @@ function initializeSpeechRecognition() {
             console.log('Speech recognition ended. Restarting...');
             startSpeechRecognition();
         };
+    } else {
+        console.error('Speech recognition is not supported in this browser.');
     }
 }
 
@@ -154,12 +170,16 @@ function startSpeechRecognition() {
     if (recognition) {
         recognition.start();
         console.log('Speech recognition started');
+    } else {
+        console.error('Speech recognition instance not initialized.');
     }
 }
 
 function populateVoiceList() {
     voices = synth.getVoices();
     const voiceSelect = document.getElementById('voice-select');
+    voiceSelect.innerHTML = ''; // Clear previous options
+
     voices.forEach((voice) => {
         if (voice.lang.startsWith('en')) {
             const option = document.createElement('option');
@@ -169,6 +189,11 @@ function populateVoiceList() {
             voiceSelect.appendChild(option);
         }
     });
+
+    // Set default voice if not selected
+    if (!voiceSelect.value && voices.length > 0) {
+        voiceSelect.selectedIndex = 0;
+    }
 }
 
 function endGame() {
@@ -183,9 +208,12 @@ function playAudio(id) {
     audio.play();
 }
 
-document.getElementById('voice-input-btn').addEventListener('click', startSpeechRecognition);
+document.getElementById('voice-input-btn').addEventListener('click', () => {
+    if (!synth.speaking) {
+        startSpeechRecognition();
+    }
+});
+
 document.getElementById('rate').addEventListener('input', function() {
     document.getElementById('rate-value').textContent = this.value;
 });
-
-synth.onvoiceschanged = populateVoiceList;
