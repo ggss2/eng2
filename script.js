@@ -10,12 +10,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadVocabulary();
     initializeSpeechRecognition();
 
-    // Populate voice list initially and listen for changes
+    // Ensure voices are loaded and populate the list
     populateVoiceList();
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = populateVoiceList;
-    } else {
-        console.warn('Voice change event not supported.');
     }
 });
 
@@ -26,12 +24,7 @@ function loadVocabulary() {
             words = data.split('\n').slice(1).map(line => {
                 const [korean, correct, wrong, wrongKorean] = line.split(',');
                 return { korean, correct, wrong, wrongKorean };
-            }).filter(word => word.correct); // Ensure valid entries
-            if (words.length === 0) {
-                console.error('No vocabulary words found.');
-                alert('No vocabulary data found. Please check the CSV file.');
-                return;
-            }
+            });
             nextWord();
         })
         .catch(error => {
@@ -41,11 +34,6 @@ function loadVocabulary() {
 }
 
 function nextWord() {
-    if (words.length === 0) {
-        console.error('No words loaded');
-        return;
-    }
-
     if (score >= 100) {
         endGame();
         return;
@@ -64,6 +52,7 @@ function nextWord() {
     document.getElementById('result').textContent = '';
     document.getElementById('voice-input-box').innerHTML = '<p>정답을 말해보세요</p>';
     document.getElementById('question-number').textContent = `Question ${questionNumber}`;
+    startSpeechRecognition();
 }
 
 function shuffleArray(array) {
@@ -196,22 +185,38 @@ function populateVoiceList() {
     const voiceSelect = document.getElementById('voice-select');
     voiceSelect.innerHTML = ''; // Clear previous options
 
-    if (voices.length === 0) {
-        console.warn('No voices found. Retrying...');
-        setTimeout(populateVoiceList, 1000); // Retry voice population if none found
-        return;
-    }
-
-    // Add US English voices
+    // Add US English voices and categorize them as Male or Female
+    let maleVoices = [];
+    let femaleVoices = [];
+    
     voices.forEach((voice) => {
         if (voice.lang === 'en-US') {
             const option = document.createElement('option');
             option.textContent = `${voice.name} (${voice.lang})`;
             option.setAttribute('data-lang', voice.lang);
             option.setAttribute('data-name', voice.name);
-            voiceSelect.appendChild(option);
+            if (voice.name.toLowerCase().includes("female") || voice.name.toLowerCase().includes("woman")) {
+                femaleVoices.push(option);
+            } else {
+                maleVoices.push(option);
+            }
         }
     });
+
+    // Add voices to select box categorized by Male and Female
+    if (femaleVoices.length > 0) {
+        const femaleGroup = document.createElement('optgroup');
+        femaleGroup.label = 'Female Voices';
+        femaleVoices.forEach(option => femaleGroup.appendChild(option));
+        voiceSelect.appendChild(femaleGroup);
+    }
+
+    if (maleVoices.length > 0) {
+        const maleGroup = document.createElement('optgroup');
+        maleGroup.label = 'Male Voices';
+        maleVoices.forEach(option => maleGroup.appendChild(option));
+        voiceSelect.appendChild(maleGroup);
+    }
 
     // Set default voice if not selected
     if (voiceSelect.options.length > 0) {
@@ -234,4 +239,11 @@ function playAudio(id) {
 }
 
 document.getElementById('voice-input-btn').addEventListener('click', () => {
-    if (!synth.speaking)
+    if (!synth.speaking) {
+        startSpeechRecognition();
+    }
+});
+
+document.getElementById('rate').addEventListener('input', function() {
+    document.getElementById('rate-value').textContent = this.value;
+});
