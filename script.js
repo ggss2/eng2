@@ -79,23 +79,17 @@ function checkAnswer(button) {
         resultElement.style.color = 'green';
         score += 2;
         playAudio('correct-audio');
-        speakWord(currentWord.correct, 3);
+        speakWord(currentWord.correct, 3); // Speak the word 3 times before moving on
     } else {
         resultElement.textContent = '틀렸습니다. 다시 시도하세요.';
         resultElement.style.color = 'red';
         score = Math.max(0, score - 2);
         playAudio('incorrect-audio');
-        return;
+        // 틀린 경우 버튼을 다시 활성화
+        buttons.forEach(btn => btn.disabled = false);
+        return; // 틀린 경우 함수를 여기서 종료
     }
     updateScore();
-    // Disable choices after answer
-    buttons.forEach(btn => btn.disabled = true);
-
-    // Proceed to the next word after a delay
-    setTimeout(() => {
-        questionNumber++;
-        nextWord();
-    }, 2000);
 }
 
 function updateScore() {
@@ -107,6 +101,7 @@ function updateScore() {
 
 function speakWord(word, times) {
     let count = 0;
+
     function speak() {
         if (count < times) {
             const utterance = new SpeechSynthesisUtterance(word);
@@ -121,15 +116,18 @@ function speakWord(word, times) {
 
             utterance.onend = function () {
                 count++;
-                speak(); // Repeat until count is reached
+                if (count < times) {
+                    speak(); // Repeat until count is reached
+                } else {
+                    // Move to the next question after speaking the word 3 times
+                    setTimeout(() => {
+                        questionNumber++;
+                        nextWord();
+                    }, 1000);
+                }
             };
 
             synth.speak(utterance);
-        } else {
-            setTimeout(() => {
-                questionNumber++;
-                nextWord();
-            }, 1000);
         }
     }
     speak();
