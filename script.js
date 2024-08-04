@@ -39,14 +39,14 @@ function nextWord() {
     const choices = [currentWord.correct, currentWord.wrong];
     shuffleArray(choices);
 
-    wordCard.innerHTML = 
+    wordCard.innerHTML = `
         <p class="korean-word">${currentWord.korean}</p>
         <button class="choice" onclick="checkAnswer(this)">${choices[0]}</button>
         <button class="choice" onclick="checkAnswer(this)">${choices[1]}</button>
-    ;
+    `;
     document.getElementById('result').textContent = '';
     document.getElementById('voice-input-box').innerHTML = '<p>정답을 말해보세요</p>';
-    document.getElementById('question-number').textContent = Question ${questionNumber};
+    document.getElementById('question-number').textContent = `Question ${questionNumber}`;
     startSpeechRecognition();
 }
 
@@ -91,8 +91,8 @@ function checkAnswer(button) {
 function updateScore() {
     const scoreDisplay = document.getElementById('score-display');
     const scoreFill = document.getElementById('score-fill');
-    scoreDisplay.textContent = Score: ${score};
-    scoreFill.style.width = ${score}%;
+    scoreDisplay.textContent = `Score: ${score}`;
+    scoreFill.style.width = `${score}%`;
 }
 
 function speakWord(word, times) {
@@ -181,10 +181,9 @@ function populateVoiceList() {
     voiceSelect.innerHTML = ''; // Clear previous options
 
     voices.forEach((voice) => {
-        // Only add voices that are American English
-        if (voice.lang === 'en-US') {
+        if (voice.lang.startsWith('en')) {
             const option = document.createElement('option');
-            option.textContent = ${voice.name} (${voice.lang});
+            option.textContent = `${voice.name} (${voice.lang})`;
             option.setAttribute('data-lang', voice.lang);
             option.setAttribute('data-name', voice.name);
             voiceSelect.appendChild(option);
