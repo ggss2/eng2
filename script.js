@@ -181,7 +181,8 @@ function populateVoiceList() {
     voiceSelect.innerHTML = ''; // Clear previous options
 
     voices.forEach((voice) => {
-        if (voice.lang.startsWith('en')) {
+        // Only add voices that are American English
+        if (voice.lang === 'en-US') {
             const option = document.createElement('option');
             option.textContent = `${voice.name} (${voice.lang})`;
             option.setAttribute('data-lang', voice.lang);
